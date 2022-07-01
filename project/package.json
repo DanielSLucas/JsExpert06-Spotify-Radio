@@ -6,9 +6,14 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "nodemon server/index.js",
+    "dev:docker": "docker-compose up --build live-reload",
     "test": "LOG_DISABLED=true NODE_OPTIONS=--experimental-vm-modules jest --no-cache",
     "test:watch": "LOG_DISABLED=true NODE_OPTIONS=--experimental-vm-modules jest --no-cache --watchAll",
-    "test:coverage": "LOG_DISABLED=true NODE_OPTIONS=--experimental-vm-modules jest --no-cache --coverage tests/unit"
+    "test:coverage": "LOG_DISABLED=true NODE_OPTIONS=--experimental-vm-modules jest --no-cache --coverage tests/unit",
+    "test:e2e": "LOG_DISABLED=true NODE_OPTIONS=--experimental-vm-modules jest --no-cache tests/e2e",
+    "test:watch:docker": "docker-compose up --build test-watch",
+    "test:coverage:docker": "docker-compose up --build test-coverage",
+    "test:docker": "docker-compose up --build test"
   },
   "engines": {
     "node": "17"
@@ -16,10 +21,13 @@
   "license": "MIT",
   "devDependencies": {
     "jest": "27",
-    "nodemon": "2"
+    "nodemon": "2",
+    "portfinder": "^1.0.28",
+    "supertest": "^6.2.2"
   },
   "dependencies": {
     "pino": "7.8.0",
-    "pino-pretty": "7.5.3"
+    "pino-pretty": "7.5.3",
+    "throttle": "^1.0.3"
   }
 }
