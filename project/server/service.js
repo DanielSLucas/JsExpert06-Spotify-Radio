@@ -1,4 +1,4 @@
-import { join, extname } from 'node:path'
+import path, { join, extname } from 'node:path'
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import { randomUUID } from 'node:crypto'
@@ -12,11 +12,17 @@ import config from './config.js';
 import { logger } from './util.js';
 
 const { 
-  dir: { publicDir }, 
+  dir: { 
+    publicDir,
+    fxDir,
+  }, 
   constants: { 
     fallbackBitRate,
     englishConversation,
-    bitRateDivisor
+    bitRateDivisor,
+    audioMediaType,
+    songVolume,
+    fxVolume,
   } 
 } = config;
 
@@ -139,5 +145,72 @@ export class Service {
       stream: this.createFileStream(name),
       type,
     }
+  }
+
+  async readFxByName(fxName) {
+    const songs = await fsPromises.readdir(fxDir);
+    const chosenSong = songs.find(filename => filename.toLowerCase().includes(fxName));
+    if(!chosenSong) return Promise.reject(`This fx ${fxName} wasn't found!`);
+
+    return path.join(fxDir, chosenSong);
+  }
+
+  appendFxToStream(fx) {
+    const throttleTransformable = new Throttle(this.currentBitRate);
+    streamsPromises.pipeline(
+      throttleTransformable,
+      this.broadCast(),
+    );
+
+    const unpipe = () => {
+      const transformStream = this.mergeAudioStreams(fx, this.currentReadable);
+      this.throttleTransform = throttleTransformable;
+      this.currentReadable = transformStream;
+      this.currentReadable.removeListener('unpipe', unpipe);
+
+      streamsPromises.pipeline(
+        transformStream,
+        this.throttleTransform,
+      );
+    }
+    this.throttleTransform.on('unpipe', unpipe);
+    this.throttleTransform.pause();
+    this.currentReadable.unpipe(this.throttleTransform);
+  }
+
+  mergeAudioStreams(song, readable) {
+    const transformStream = PassThrough();
+    const args = [
+      "-t", audioMediaType,
+      "-v", songVolume,
+      // -m => merge -> o `-` é para receber como stream
+      "-m", "-",
+      "-t", audioMediaType,
+      "-v", fxVolume,
+      song,
+      "-t", audioMediaType,
+      "-"
+    ]
+
+    const {      
+      stdout,
+      stdin,
+    } = this._executeSoxCommand(args);
+
+    // plugamos a stream de conversacao
+    // na entrada de dados do terminal
+    streamsPromises.pipeline(
+      readable,
+      stdin,
+    );
+    // . catch(error => logger.error(`error on sending stream to sox ${error}`))
+
+    streamsPromises.pipeline(
+      stdout,
+      transformStream,
+    );
+    // . catch(error => logger.error(`error on receiving stream from sox ${error}`))
+
+    return transformStream;
   }
 }

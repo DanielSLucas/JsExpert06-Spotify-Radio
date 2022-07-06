@@ -173,10 +173,17 @@
     <p>Listening on Erick Wendel</p>
   </div>
   <script src="./home/js/animation.js"></script>
-  <script>
+  <script>    
+    const player = document.getElementById('audio');
+    const brodcast = new BroadcastChannel('player');
+    
+    brodcast.onmessage = ({ data }) => {
+      console.log('event received', data)
+      if (data === 'start' || data === 'stop') togglePlay();      
+    }
     // para prevenir o cache do audio
     window.onload = () => {
-      document.getElementById('audio').src = '/stream?id=' + Date.now()
+      player.src = '/stream?id=' + Date.now()
     }
   </script>
 

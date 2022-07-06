@@ -25,7 +25,13 @@ export class Controller {
     if(cmd.includes('stop')) { 
       this.service.stopStream();
       return result;
-    }    
+    }
+
+    const chosenFx = await this.service.readFxByName(cmd);
+    logger.info(`added frx to service: ${chosenFx}`); 
+    this.service.appendFxToStream(chosenFx);
+
+    return result;
   }
 
   createClientStream() {
